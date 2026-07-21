@@ -1,0 +1,8 @@
+work/
+out/
+dist/
+*.pkg
+*.tar.gz
+._*
+.DS_Store
+docs/
