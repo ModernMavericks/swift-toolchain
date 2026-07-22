@@ -18,7 +18,7 @@ DI="$(xcrun -f dyld_info)"
 
 echo "==> 1. toolchain (host swiftc/clang)"
 if [ ! -x toolchain/usr/bin/swiftc ]; then
-  PKG="$HERE/dist/swift-$SWIFT_VERSION-RELEASE-osx.pkg"
+  PKG="$HERE/dist/$TOOLCHAIN_ASSET"
   [ -f "$PKG" ] || { echo "FAIL: run ./mirror-toolchain.sh first (need $PKG)"; exit 1; }
   rm -rf tc-expand toolchain; mkdir -p toolchain
   pkgutil --expand "$PKG" tc-expand
@@ -35,8 +35,7 @@ test "$(git -C swift rev-parse HEAD)" = "$SWIFT_SHA" || {
 echo "==> 3. RELOCATE: unpack the SHIPPED TARBALL under a name that differs from the build location"
 # Deliberately extract dist/*.tar.gz, not out/llvm: the gate must test the bytes we publish,
 # not the directory they were staged from.
-SHORT="$(printf %s "$LLVM_SHA" | cut -c1-12)"
-TARBALL="$HERE/dist/llvm-buildsupport-$SHORT-macos-$HOST_ARCH.tar.gz"
+TARBALL="$HERE/dist/$BUILDSUPPORT_ASSET"
 [ -f "$TARBALL" ] || { echo "FAIL: run ./package.sh first (need $TARBALL)"; exit 1; }
 rm -rf gate-relocated gate-build
 mkdir -p gate-relocated

@@ -7,7 +7,7 @@ set -eu
 HERE="$(cd "$(dirname "$0")" && pwd)"
 . "$HERE/pins.env"
 DIST="$HERE/dist"; mkdir -p "$DIST"
-PKG="$DIST/swift-$SWIFT_VERSION-RELEASE-osx.pkg"
+PKG="$DIST/$TOOLCHAIN_ASSET"
 
 if [ ! -f "$PKG" ]; then
   echo "==> downloading $TOOLCHAIN_URL (~1.5 GB)"

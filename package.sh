@@ -7,9 +7,8 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 DIST="$HERE/dist"; mkdir -p "$DIST"
 [ -d "$HERE/out/llvm" ] || { echo "FAIL: run ./build-llvm.sh first"; exit 1; }
 
-SHORT="$(printf %s "$LLVM_SHA" | cut -c1-12)"
-TARBALL="$DIST/llvm-buildsupport-$SHORT-macos-$HOST_ARCH.tar.gz"
-PKG="$DIST/swift-$SWIFT_VERSION-RELEASE-osx.pkg"
+TARBALL="$DIST/$BUILDSUPPORT_ASSET"
+PKG="$DIST/$TOOLCHAIN_ASSET"
 
 echo "==> verifying toolchain pin before packaging"
 [ -f "$PKG" ] || { echo "FAIL: run ./mirror-toolchain.sh first (need $PKG)"; exit 1; }
@@ -28,11 +27,8 @@ rm -f "$TARBALL"
 # no AppleDouble at all, and gate any change on BOTH the SHA being stable AND the size and
 # entry count being unchanged.
 tar -C "$HERE/out" -czf "$TARBALL" llvm
-rm -f "$DIST/.filelist"
 
 echo "==> SHA256SUMS"
-( cd "$DIST" && shasum -a 256 \
-    "llvm-buildsupport-$SHORT-macos-$HOST_ARCH.tar.gz" \
-    "swift-$SWIFT_VERSION-RELEASE-osx.pkg" > SHA256SUMS )
+( cd "$DIST" && shasum -a 256 "$BUILDSUPPORT_ASSET" "$TOOLCHAIN_ASSET" > SHA256SUMS )
 cat "$DIST/SHA256SUMS"
 echo "OK: assets staged in $DIST"
