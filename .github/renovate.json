@@ -1,19 +1,20 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["github>ModernMavericks/shared-cmake"],
+  "ignoreTests": false,
   "customManagers": [
     {
-      "description": "Swift releases. swiftlang/swift tags them swift-X.Y.Z-RELEASE; pins.env holds the bare version and derives the tag, the download URL and the mirrored asset name from it.",
+      "description": "Swift releases. swiftlang/swift tags them swift-X.Y.Z-RELEASE. Version and commit are captured by ONE regex so Renovate moves them together -- verify-relocatable.sh asserts the clone of SWIFT_TAG is exactly SWIFT_SHA, so a version bumped without its commit fails closed.",
       "customType": "regex",
       "fileMatch": ["^pins\\.env$"],
-      "matchStrings": ["SWIFT_VERSION=\"(?<currentValue>[^\"]+)\"\\s*#\\s*renovate: swiftlang/swift"],
+      "matchStrings": ["SWIFT_VERSION=\"(?<currentValue>[^\"]+)\"[\\s\\S]*?SWIFT_SHA=\"(?<currentDigest>[0-9a-f]{40})\""],
       "depNameTemplate": "swiftlang/swift",
       "packageNameTemplate": "swiftlang/swift",
       "datasourceTemplate": "github-tags",
       "extractVersionTemplate": "^swift-(?<version>.+)-RELEASE$"
     },
     {
-      "description": "The swiftlang/llvm-project commit the build support is cut from. Branch and digest are captured together so the branch stays authoritative in pins.env rather than being duplicated here.",
+      "description": "The swiftlang/llvm-project commit the build support is cut from. Branch and digest captured together so the branch stays authoritative in pins.env rather than duplicated here.",
       "customType": "regex",
       "fileMatch": ["^pins\\.env$"],
       "matchStrings": ["LLVM_BRANCH=\"(?<currentValue>[^\"]+)\"[\\s\\S]*?LLVM_SHA=\"(?<currentDigest>[0-9a-f]{40})\""],
@@ -24,8 +25,15 @@
   ],
   "packageRules": [
     {
-      "description": "A Swift version bump is NOT self-contained: TOOLCHAIN_SHA256 is the hash of a 1.5 GB binary Renovate never downloads, so the PR is correct except for that line and mirror-toolchain.sh fails closed on it. Never automerge this one -- it needs a human to paste the hash the failure prints. The shared preset's automerge (with ignoreTests) would otherwise land a broken main.",
+      "description": "A PATCH Swift bump is self-contained now: the tag and download URL derive from SWIFT_VERSION, SWIFT_SHA moves with it, and the .pkg is verified by signer identity rather than a hash nobody can predict. Let it merge on its own -- but only after the build passes, hence ignoreTests:false above.",
       "matchDepNames": ["swiftlang/swift"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    {
+      "description": "A MINOR or MAJOR Swift bump is NOT self-contained: LLVM_BRANCH is swift/release/<minor> and has to follow, which no regex here can infer. Needs a human.",
+      "matchDepNames": ["swiftlang/swift"],
+      "matchUpdateTypes": ["minor", "major"],
       "automerge": false
     }
   ]

@@ -4,6 +4,7 @@ set -eu
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 . "$HERE/pins.env"
+. "$HERE/lib.sh"
 DIST="$HERE/dist"; mkdir -p "$DIST"
 [ -d "$HERE/out/llvm" ] || { echo "FAIL: run ./build-llvm.sh first"; exit 1; }
 
@@ -12,8 +13,7 @@ PKG="$DIST/$TOOLCHAIN_ASSET"
 
 echo "==> verifying toolchain pin before packaging"
 [ -f "$PKG" ] || { echo "FAIL: run ./mirror-toolchain.sh first (need $PKG)"; exit 1; }
-echo "$TOOLCHAIN_SHA256  $PKG" | shasum -a 256 -c - || {
-  echo "FAIL: toolchain SHA256 mismatch — refusing to package"; exit 1; }
+verify_toolchain_signature "$PKG" || exit 1
 
 echo "==> packaging $TARBALL"
 rm -f "$TARBALL"
