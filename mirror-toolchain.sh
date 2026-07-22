@@ -1,7 +1,8 @@
 #!/bin/sh
 # mirror-toolchain.sh — download the official swift.org toolchain and stage it VERBATIM.
-# No repacking: the mirrored file is byte-identical to upstream, so its SHA256 is the
-# upstream SHA256 and provenance stays checkable against download.swift.org.
+# No repacking: the mirrored file is byte-identical to upstream, so its SHA256 is the upstream
+# SHA256 and provenance stays checkable against download.swift.org. That digest is RECORDED, not
+# pinned -- the gate is the installer signature (see lib.sh), which holds across releases.
 set -eu
 
 HERE="$(cd "$(dirname "$0")" && pwd)"

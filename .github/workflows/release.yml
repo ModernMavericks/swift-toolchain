@@ -37,7 +37,7 @@ jobs:
       - name: Build the relocatable LLVM build-support tree
         run: ./build-llvm.sh
 
-      - name: Mirror the swift.org toolchain (verbatim; SHA must match upstream)
+      - name: Mirror the swift.org toolchain (verbatim; signature must match upstream)
         run: ./mirror-toolchain.sh
 
       - name: Package assets + SHA256SUMS
