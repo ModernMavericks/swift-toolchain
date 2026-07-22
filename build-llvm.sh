@@ -37,7 +37,10 @@ if [ ! -x llvm-build/bin/llvm-tblgen ]; then
     -DLLVM_TARGETS_TO_BUILD="X86;AArch64" \
     -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
     -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF
-  ninja -C llvm-build llvm-tblgen clang-tblgen llvm-config intrinsics_gen clang-tablegen-targets
+  # llvm-min-tblgen is named explicitly: step 3 copies it, and relying on it appearing
+  # transitively would break the copy if a future LLVM stops pulling it in.
+  ninja -C llvm-build llvm-tblgen llvm-min-tblgen clang-tblgen llvm-config \
+        intrinsics_gen clang-tablegen-targets
 fi
 
 echo "==> 3. install the relocatable subset"
@@ -69,7 +72,7 @@ done
 
 echo "==> 5. assert relocatability"
 # No path from THIS build may survive in any shipped .cmake file.
-if grep -rl "$ROOT" "$OUT" --include='*.cmake' 2>/dev/null | grep .; then
+if grep -rlF "$ROOT" "$OUT" --include='*.cmake' 2>/dev/null | grep .; then
   echo "FAIL: absolute build paths leaked into the install tree (listed above)"; exit 1
 fi
 grep -q 'set(LLVM_CMAKE_DIR "${LLVM_INSTALL_PREFIX}/lib/cmake/llvm")' \
