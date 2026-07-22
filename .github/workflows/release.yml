@@ -1,0 +1,73 @@
+name: release
+
+# Build the pinned host build environment for ModernMavericks/swift-runtime and publish it as
+# relocatable, SHA-verified release assets.
+#
+# The gate (verify-relocatable.sh) unpacks the SHIPPED TARBALL into a directory other than the
+# one it was built in, then configures AND builds libswiftCore against it, asserting minOS 10.9.
+# That is the regression this repo exists to prevent: a CMake build tree bakes absolute paths at
+# configure time, so reusing one after a checkout-path change (a repo rename, a fork, a
+# different runner layout) silently breaks with a confusing LLVMInstallSymlink error.
+#
+# Tags ARE the version -- no `v` prefix. See VERSION.
+
+on:
+  push:
+    branches: ['**']            # regular build on every push, so breaks surface off the release path
+    tags: ['*-mavericks.*']     # publish only on a version tag
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-26   # Apple Silicon (arm64) — mirrors local Tahoe; use macos-15 if unavailable
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version check (tag must equal VERSION)
+        run: |
+          VER=$(cat VERSION)
+          if [ "${GITHUB_REF_TYPE}" = tag ] && [ "${GITHUB_REF_NAME}" != "$VER" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} != $VER (VERSION file)"; exit 1
+          fi
+
+      - name: Build the relocatable LLVM build-support tree
+        run: ./build-llvm.sh
+
+      - name: Mirror the swift.org toolchain (verbatim; SHA must match upstream)
+        run: ./mirror-toolchain.sh
+
+      - name: Package assets + SHA256SUMS
+        run: ./package.sh
+
+      - name: GATE — relocate, then configure AND build libswiftCore (must pass)
+        run: ./verify-relocatable.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: swift-toolchain
+          path: |
+            dist/*.tar.gz
+            dist/*.pkg
+            dist/SHA256SUMS
+
+  publish:
+    needs: [build]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with: { path: dist, merge-multiple: true }
+      - name: Publish release
+        uses: softprops/action-gh-release@v3
+        with:
+          body_path: release-notes/${{ github.ref_name }}.md
+          files: |
+            dist/*.tar.gz
+            dist/*.pkg
+            dist/SHA256SUMS
