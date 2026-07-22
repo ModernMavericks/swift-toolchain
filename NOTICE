@@ -10,9 +10,15 @@ Swift runtime targeting Mac OS X 10.9. It ships two kinds of artifact:
 
 2. swift-*-RELEASE-osx.pkg
    A byte-for-byte mirror of the official swift.org toolchain installer, kept
-   so builds remain reproducible if swift.org prunes older releases. Licensed
-   Apache-2.0 WITH Runtime Library Exception. Unmodified; its SHA256 matches
-   the upstream file. Upstream: https://download.swift.org/
+   so builds remain reproducible if swift.org prunes older releases. This
+   installer bundles components under multiple licenses: the Swift runtime
+   libraries are Apache-2.0 WITH Runtime Library Exception, the included
+   LLVM/clang/lldb are Apache-2.0 WITH LLVM-exception, and further
+   third-party components carry their own licenses (see the installer's own
+   license materials). We redistribute it unmodified and verbatim; its
+   SHA256 matches the upstream file, and verbatim redistribution is
+   permitted regardless of the exact license mix. Upstream:
+   https://download.swift.org/
 
 Neither artifact is redistributed inside the Mavericks Swift runtime .pkg.
 Both are host-side build tooling only.

@@ -9,11 +9,26 @@ DIST="$HERE/dist"; mkdir -p "$DIST"
 
 SHORT="$(printf %s "$LLVM_SHA" | cut -c1-12)"
 TARBALL="$DIST/llvm-buildsupport-$SHORT-macos-$HOST_ARCH.tar.gz"
+PKG="$DIST/swift-$SWIFT_VERSION-RELEASE-osx.pkg"
+
+echo "==> verifying toolchain pin before packaging"
+[ -f "$PKG" ] || { echo "FAIL: run ./mirror-toolchain.sh first (need $PKG)"; exit 1; }
+echo "$TOOLCHAIN_SHA256  $PKG" | shasum -a 256 -c - || {
+  echo "FAIL: toolchain SHA256 mismatch — refusing to package"; exit 1; }
 
 echo "==> packaging $TARBALL"
 rm -f "$TARBALL"
 # Archive the `llvm` directory itself so the consumer extracts to <root>/llvm.
+# NOT byte-reproducible yet: gzip embeds an mtime and tar records per-file mtimes, so
+# rebuilding from identical pins yields a different SHA256. Deliberately deferred rather
+# than half-solved -- feeding bsdtar an explicit sorted file list (the usual fix) made it
+# synthesize AppleDouble ._* members from extended attributes on this NFS checkout and blew
+# the artifact from 13M to 64M; neither --no-mac-metadata nor COPYFILE_DISABLE suppressed
+# it. Traversal mode handles the sidecars correctly. Revisit in CI, where the filesystem has
+# no AppleDouble at all, and gate any change on BOTH the SHA being stable AND the size and
+# entry count being unchanged.
 tar -C "$HERE/out" -czf "$TARBALL" llvm
+rm -f "$DIST/.filelist"
 
 echo "==> SHA256SUMS"
 ( cd "$DIST" && shasum -a 256 \

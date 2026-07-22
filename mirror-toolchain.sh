@@ -10,8 +10,8 @@ DIST="$HERE/dist"; mkdir -p "$DIST"
 PKG="$DIST/swift-$SWIFT_VERSION-RELEASE-osx.pkg"
 
 if [ ! -f "$PKG" ]; then
-  echo "==> downloading $TOOLCHAIN_URL (~1.2 GB)"
-  curl -fSL -o "$PKG.tmp" "$TOOLCHAIN_URL"
+  echo "==> downloading $TOOLCHAIN_URL (~1.5 GB)"
+  curl -fSL --retry 3 --retry-delay 5 -o "$PKG.tmp" "$TOOLCHAIN_URL"
   mv "$PKG.tmp" "$PKG"
 fi
 

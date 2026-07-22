@@ -12,7 +12,7 @@ once per pin and publishes a **relocatable** CMake *install* tree instead.
 | Asset | Size | What |
 | --- | --- | --- |
 | `llvm-buildsupport-<sha>-macos-arm64.tar.gz` | ~13 MB | LLVM CMake package + headers + TableGen |
-| `swift-<ver>-RELEASE-osx.pkg` | ~1.2 GB | Verbatim swift.org toolchain mirror |
+| `swift-<ver>-RELEASE-osx.pkg` | ~1.5 GB | Verbatim swift.org toolchain mirror |
 
 ## Scripts
 

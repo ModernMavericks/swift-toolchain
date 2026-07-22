@@ -12,7 +12,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 # Same scratch override as build-llvm.sh. This gate does a full Swift stdlib build, so it
 # especially wants local disk when the repo is on slow storage. CI leaves this unset.
 ROOT="${SWIFT_TOOLCHAIN_WORK:-$HERE/work}"; mkdir -p "$ROOT"; cd "$ROOT"
-DI="/Library/Developer/CommandLineTools/usr/bin/dyld_info"
+DI="$(xcrun -f dyld_info)"
 
 [ -d "$HERE/out/llvm" ] || { echo "FAIL: run ./build-llvm.sh first"; exit 1; }
 
@@ -23,6 +23,7 @@ if [ ! -x toolchain/usr/bin/swiftc ]; then
   rm -rf tc-expand toolchain; mkdir -p toolchain
   pkgutil --expand "$PKG" tc-expand
   ditto -x -z "$(find tc-expand -name Payload | head -1)" toolchain
+  rm -rf tc-expand
 fi
 TC="$ROOT/toolchain/usr"
 
@@ -72,10 +73,10 @@ ninja -C gate-build "swiftCore-macosx-$ARCH"
 echo "==> 6. assert the result is a 10.9 x86_64 runtime"
 CORE="$ROOT/gate-build/lib/swift/macosx/$ARCH/libswiftCore.dylib"
 [ -f "$CORE" ] || { echo "FAIL: no libswiftCore.dylib produced"; exit 1; }
-PLATFORM_OUT="$(arch -x86_64 "$DI" -platform "$CORE")"
+PLATFORM_OUT="$("$DI" -platform "$CORE")"
 printf '%s\n' "$PLATFORM_OUT" | sed -n '3,4p'
 MINOS="$(printf '%s\n' "$PLATFORM_OUT" | awk 'NR==4{print $2}')"
-[ "$MINOS" = "10.9" ] || {
-  echo "FAIL: built runtime is not minOS 10.9 (got: $MINOS)"; exit 1; }
+[ "$MINOS" = "$DEPLOYMENT" ] || {
+  echo "FAIL: built runtime is not minOS $DEPLOYMENT (got: $MINOS)"; exit 1; }
 
-echo "OK: relocated build-support tree configures AND builds a minOS 10.9 $ARCH libswiftCore"
+echo "OK: relocated build-support tree configures AND builds a minOS $DEPLOYMENT $ARCH libswiftCore"
