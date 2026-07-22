@@ -1,0 +1,32 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>ModernMavericks/shared-cmake"],
+  "customManagers": [
+    {
+      "description": "Swift releases. swiftlang/swift tags them swift-X.Y.Z-RELEASE; pins.env holds the bare version and derives the tag, the download URL and the mirrored asset name from it.",
+      "customType": "regex",
+      "fileMatch": ["^pins\\.env$"],
+      "matchStrings": ["SWIFT_VERSION=\"(?<currentValue>[^\"]+)\"\\s*#\\s*renovate: swiftlang/swift"],
+      "depNameTemplate": "swiftlang/swift",
+      "packageNameTemplate": "swiftlang/swift",
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^swift-(?<version>.+)-RELEASE$"
+    },
+    {
+      "description": "The swiftlang/llvm-project commit the build support is cut from. Branch and digest are captured together so the branch stays authoritative in pins.env rather than being duplicated here.",
+      "customType": "regex",
+      "fileMatch": ["^pins\\.env$"],
+      "matchStrings": ["LLVM_BRANCH=\"(?<currentValue>[^\"]+)\"[\\s\\S]*?LLVM_SHA=\"(?<currentDigest>[0-9a-f]{40})\""],
+      "depNameTemplate": "swiftlang/llvm-project",
+      "packageNameTemplate": "https://github.com/swiftlang/llvm-project",
+      "datasourceTemplate": "git-refs"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "A Swift version bump is NOT self-contained: TOOLCHAIN_SHA256 is the hash of a 1.5 GB binary Renovate never downloads, so the PR is correct except for that line and mirror-toolchain.sh fails closed on it. Never automerge this one -- it needs a human to paste the hash the failure prints. The shared preset's automerge (with ignoreTests) would otherwise land a broken main.",
+      "matchDepNames": ["swiftlang/swift"],
+      "automerge": false
+    }
+  ]
+}
