@@ -72,8 +72,10 @@ ninja -C gate-build "swiftCore-macosx-$ARCH"
 echo "==> 6. assert the result is a 10.9 x86_64 runtime"
 CORE="$ROOT/gate-build/lib/swift/macosx/$ARCH/libswiftCore.dylib"
 [ -f "$CORE" ] || { echo "FAIL: no libswiftCore.dylib produced"; exit 1; }
-arch -x86_64 "$DI" -platform "$CORE" | sed -n '3,4p'
-arch -x86_64 "$DI" -platform "$CORE" | grep -q "10\.9" || {
-  echo "FAIL: built runtime is not minOS 10.9"; exit 1; }
+PLATFORM_OUT="$(arch -x86_64 "$DI" -platform "$CORE")"
+printf '%s\n' "$PLATFORM_OUT" | sed -n '3,4p'
+MINOS="$(printf '%s\n' "$PLATFORM_OUT" | awk 'NR==4{print $2}')"
+[ "$MINOS" = "10.9" ] || {
+  echo "FAIL: built runtime is not minOS 10.9 (got: $MINOS)"; exit 1; }
 
 echo "OK: relocated build-support tree configures AND builds a minOS 10.9 $ARCH libswiftCore"
