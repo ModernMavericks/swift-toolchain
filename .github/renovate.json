@@ -6,7 +6,9 @@
     {
       "description": "Swift releases. swiftlang/swift tags them swift-X.Y.Z-RELEASE. Version and commit are captured by ONE regex so Renovate moves them together -- verify-relocatable.sh asserts the clone of SWIFT_TAG is exactly SWIFT_SHA, so a version bumped without its commit fails closed.",
       "customType": "regex",
-      "fileMatch": ["^pins\\.env$"],
+      "managerFilePatterns": [
+        "/^pins\\.env$/"
+      ],
       "matchStrings": ["SWIFT_VERSION=\"(?<currentValue>[^\"]+)\"[\\s\\S]*?SWIFT_SHA=\"(?<currentDigest>[0-9a-f]{40})\""],
       "depNameTemplate": "swiftlang/swift",
       "packageNameTemplate": "swiftlang/swift",
@@ -16,7 +18,9 @@
     {
       "description": "The swiftlang/llvm-project commit the build support is cut from. Branch and digest captured together so the branch stays authoritative in pins.env rather than duplicated here.",
       "customType": "regex",
-      "fileMatch": ["^pins\\.env$"],
+      "managerFilePatterns": [
+        "/^pins\\.env$/"
+      ],
       "matchStrings": ["LLVM_BRANCH=\"(?<currentValue>[^\"]+)\"[\\s\\S]*?LLVM_SHA=\"(?<currentDigest>[0-9a-f]{40})\""],
       "depNameTemplate": "swiftlang/llvm-project",
       "packageNameTemplate": "https://github.com/swiftlang/llvm-project",
