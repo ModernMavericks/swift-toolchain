@@ -37,3 +37,18 @@ exists.
 The pins above are all *own upstream* (the Swift release and the LLVM commit coupled to it), which is
 the `-mavericks.1` path, not a repackage. There is no foreign ingredient to watch — this repo consumes
 no other ModernMavericks product. Add a caller the day one lands, with `own-upstream-paths: pins.env`.
+
+## Conformance deviations
+
+`check-artifact-conformance.sh` holds a release's artifacts to the family's schemes. These departures
+are deliberate, and scoped to the artifact they concern:
+
+- version:upstream-swift-*.pkg: mirrored verbatim from swift.org, so its version is upstream's own
+  (`6.3.3.20260625101`). Rewriting it would break the correspondence with download.swift.org that this
+  repo exists to keep checkable.
+- floor:upstream-swift-*.pkg: upstream ships a 10.11 floor. We do not restamp a mirrored package.
+- identifier:upstream-swift-*.pkg: `org.swift.*` is upstream's identifier; claiming
+  `dev.modernmavericks.*` for bytes we did not build would be a lie.
+
+The build-support tarball this repo *does* build carries no such exemption, which is the point of
+scoping each deviation to a filename glob rather than to the check.
