@@ -20,6 +20,12 @@ on:
 permissions:
   contents: write
 
+# Each tag is a unique ref, so a publish is never cancelled by a later one -- and must not be: two
+# publishes racing the same tag is a corrupt release, not a flaky build.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: macos-26   # Apple Silicon (arm64) — mirrors local Tahoe; use macos-15 if unavailable
