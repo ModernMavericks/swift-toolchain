@@ -1,6 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>ModernMavericks/shared-cmake"],
+  "extends": [
+    "github>ModernMavericks/shared-cmake"
+  ],
   "customManagers": [
     {
       "description": "Swift releases. swiftlang/swift tags them swift-X.Y.Z-RELEASE. Version and commit are captured by ONE regex so Renovate moves them together -- verify-relocatable.sh asserts the clone of SWIFT_TAG is exactly SWIFT_SHA, so a version bumped without its commit fails closed.",
@@ -8,7 +10,9 @@
       "managerFilePatterns": [
         "/^pins\\.env$/"
       ],
-      "matchStrings": ["SWIFT_VERSION=\"(?<currentValue>[^\"]+)\"[\\s\\S]*?SWIFT_SHA=\"(?<currentDigest>[0-9a-f]{40})\""],
+      "matchStrings": [
+        "SWIFT_VERSION=\"(?<currentValue>[^\"]+)\"[\\s\\S]*?SWIFT_SHA=\"(?<currentDigest>[0-9a-f]{40})\""
+      ],
       "depNameTemplate": "swiftlang/swift",
       "packageNameTemplate": "swiftlang/swift",
       "datasourceTemplate": "github-tags",
@@ -20,7 +24,9 @@
       "managerFilePatterns": [
         "/^pins\\.env$/"
       ],
-      "matchStrings": ["LLVM_BRANCH=\"(?<currentValue>[^\"]+)\"[\\s\\S]*?LLVM_SHA=\"(?<currentDigest>[0-9a-f]{40})\""],
+      "matchStrings": [
+        "LLVM_BRANCH=\"(?<currentValue>[^\"]+)\"[\\s\\S]*?LLVM_SHA=\"(?<currentDigest>[0-9a-f]{40})\""
+      ],
       "depNameTemplate": "swiftlang/llvm-project",
       "packageNameTemplate": "https://github.com/swiftlang/llvm-project",
       "datasourceTemplate": "git-refs"
@@ -28,15 +34,24 @@
   ],
   "packageRules": [
     {
-      "description": "A PATCH Swift bump is self-contained now: the tag and download URL derive from SWIFT_VERSION, SWIFT_SHA moves with it, and the .pkg is verified by signer identity rather than a hash nobody can predict. Let it merge on its own -- but only after the build passes, which the shared preset's ignoreTests:false already requires.",
-      "matchDepNames": ["swiftlang/swift"],
-      "matchUpdateTypes": ["patch"],
+      "description": "A PATCH Swift bump is self-contained: the tag and download URL derive from SWIFT_VERSION, SWIFT_SHA moves with it, and the .pkg is verified by signer identity. Takes the family default (ship-if-green).",
+      "matchDepNames": [
+        "swiftlang/swift"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "automerge": true
     },
     {
-      "description": "A MINOR or MAJOR Swift bump is NOT self-contained: LLVM_BRANCH is swift/release/<minor> and has to follow, which no regex here can infer. Needs a human.",
-      "matchDepNames": ["swiftlang/swift"],
-      "matchUpdateTypes": ["minor", "major"],
+      "description": "EXCEPTION to the family ship-if-green default. A MINOR or MAJOR Swift bump is not self-contained: LLVM_BRANCH is swift/release/<minor> and must follow, which no regex here can infer. Left alone it builds Swift <new> against the <old> LLVM build support -- it would BUILD FINE AND BE WRONG, which is exactly what a green build cannot catch. Needs a human.",
+      "matchDepNames": [
+        "swiftlang/swift"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
       "automerge": false
     }
   ]
