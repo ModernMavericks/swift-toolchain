@@ -29,13 +29,17 @@ concurrency:
 jobs:
   build:
     runs-on: macos-26   # Apple Silicon (arm64) — mirrors local Tahoe; use macos-15 if unavailable
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v7
 
       - name: Version check (tag must equal VERSION)
+        id: ver
         run: |
           VER=$(cat VERSION)
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
           if [ "${GITHUB_REF_TYPE}" = tag ] && [ "${GITHUB_REF_NAME}" != "$VER" ]; then
             echo "::error::tag ${GITHUB_REF_NAME} != $VER (VERSION file)"; exit 1
           fi
@@ -52,6 +56,20 @@ jobs:
       - name: GATE — relocate, then configure AND build libswiftCore (must pass)
         run: ./verify-relocatable.sh
 
+      # The body travels IN the artifact: publish-release.yml does not check out the repo, so one rule
+      # works whether the notes are committed (here) or generated (tailscale).
+      - name: Stage the release notes
+        run: |
+          set -eu
+          VER="$(cat VERSION)"
+          mkdir -p dist
+          if [ -s "release-notes/$VER.md" ]; then
+            cp "release-notes/$VER.md" dist/RELEASE_NOTES.md
+          else
+            printf '## %s\n\nAutomated release of the pinned Swift build environment.\n' "$VER" > dist/RELEASE_NOTES.md
+          fi
+
+      # No SHA256SUMS in the artifact: publish-release.yml regenerates it over everything it attaches.
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -59,21 +77,14 @@ jobs:
           path: |
             dist/*.tar.gz
             dist/*.pkg
-            dist/SHA256SUMS
+            dist/RELEASE_NOTES.md
 
   publish:
     needs: [build]
     if: github.ref_type == 'tag'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
-        with: { path: dist, merge-multiple: true }
-      - name: Publish release
-        uses: softprops/action-gh-release@v3
-        with:
-          body_path: release-notes/${{ github.ref_name }}.md
-          files: |
-            dist/*.tar.gz
-            dist/*.pkg
-            dist/SHA256SUMS
+    permissions:
+      contents: write
+    uses: ModernMavericks/shared-cmake/.github/workflows/publish-release.yml@v1
+    with:
+      version: ${{ needs.build.outputs.version }}
+      artifact: swift-toolchain
