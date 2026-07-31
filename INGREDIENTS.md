@@ -11,12 +11,26 @@ repo are not conventions.
 
 | Ingredient | Pinned in | Renovate | On a bump |
 |---|---|---|---|
-| Swift release (own upstream) | `SWIFT_VERSION` + `SWIFT_SHA` in `pins.env` | ✅ `github-tags` on `swiftlang/swift`, **patch automerged** | tag `<upstream>-mavericks.1` to publish |
-| swiftlang/llvm-project commit | `LLVM_BRANCH` + `LLVM_SHA` in `pins.env` | ✅ `git-refs` | manual: `LLVM_BRANCH` is `swift/release/<minor>` and must follow a minor Swift bump |
+| Swift release (own upstream) | `SWIFT_VERSION` + `SWIFT_SHA` in `pins.env` | ✅ `github-tags` on `swiftlang/swift`, **patch automerged** | auto-cuts `<upstream>-mavericks.1` on the push to main (no tag to push by hand) |
+| swiftlang/llvm-project commit | `LLVM_BRANCH` + `LLVM_SHA` in `pins.env` | ✅ `git-refs` | auto-repackages `-mavericks.(N+1)`; `LLVM_BRANCH` is `swift/release/<minor>` and must follow a minor Swift bump |
 | swift.org toolchain `.pkg` | `TOOLCHAIN_URL`, derived from `SWIFT_VERSION` | ✅ moves with the Swift pin | verified by **signer identity**, not a hash — see below |
 
-Not ingredients: `VERSION` is this repo's own packaging revision, and the build scripts are its recipe.
-A change there is a repackage you cut deliberately.
+Not ingredients: the build scripts are this repo's recipe; a change there is a repackage you cut
+deliberately (dispatch `release.yml` with `local_release=true`). There is no committed `VERSION` —
+the packaging revision N is derived from the shipped tags.
+
+## How a bump reaches a release
+
+Both paths are automatic, and they are kept apart by *which pin moved*:
+
+- **`SWIFT_VERSION` moved** → a new upstream. `version.sh` reports `RELEASE=yes` because that upstream
+  has no tag yet, so the push to main auto-cuts `-mavericks.1`.
+- **any other pin in `pins.env` moved** → an ingredient bump. `repackage-on-ingredient-bump.yml`
+  dispatches `release.yml` with `local_release=true`, which cuts `-mavericks.(N+1)`.
+
+The caller declares `own-upstream-paths: pins.env:SWIFT_VERSION` — a *key*, not a path, because both
+kinds of pin live in the same file. Without that, a Swift bump would publish twice: once from the
+push, once from the dispatched repackage.
 
 ## Why version and commit are captured by one regex
 

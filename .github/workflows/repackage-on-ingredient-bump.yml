@@ -1,0 +1,21 @@
+name: repackage-on-ingredient-bump
+
+# Every pin this repo has lives in pins.env, so that is the path to watch. SWIFT_VERSION is this
+# repo's OWN upstream and is declared by key: a Swift bump is a new-upstream release (N=1), auto-cut
+# by release.yml on the push to main. Without the key declaration that bump would publish twice --
+# once from the push, once from a dispatched N+1 repackage.
+#
+# Everything else in pins.env (the LLVM pin, the installer signer, the deployment floor) is an
+# ingredient: it changes what we ship without changing which Swift it is, which is exactly a
+# repackage.
+on:
+  push:
+    branches: [main]
+    paths: ['pins.env']
+jobs:
+  repackage:
+    permissions:
+      actions: write
+    uses: ModernMavericks/shared-cmake/.github/workflows/repackage-on-ingredient-bump.yml@v1
+    with:
+      own-upstream-paths: "pins.env:SWIFT_VERSION"

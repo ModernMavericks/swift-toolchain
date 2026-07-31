@@ -14,8 +14,13 @@ name: release
 on:
   push:
     branches: ['**']            # regular build on every push, so breaks surface off the release path
-    tags: ['*-mavericks.*']     # publish only on a version tag
+    tags: ['*-mavericks.*']     # a tag always publishes
   workflow_dispatch:
+    inputs:
+      local_release:
+        description: "Cut and publish a repackage of the shipped upstream (-mavericks.N+1)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -31,6 +36,7 @@ jobs:
     runs-on: macos-26   # Apple Silicon (arm64) — mirrors local Tahoe; use macos-15 if unavailable
     outputs:
       version: ${{ steps.ver.outputs.version }}
+      publish: ${{ steps.ver.outputs.publish }}
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v7
@@ -50,17 +56,39 @@ jobs:
       - name: Derive the upstream version from the pin
         run: sh scripts/derive-upstream-version.sh
 
-      - name: Resolve the version
+      # Three ways to publish, matching the rest of the family:
+      #   - a *-mavericks.* tag: VER = the tag (a hand-cut release).
+      #   - workflow_dispatch(local_release=true): a REPACKAGE of the shipped upstream, N+1.
+      #     Dispatched by repackage-on-ingredient-bump.yml when an ingredient pin moves.
+      #   - a push to main whose upstream has no release yet: auto-cut N=1. This is how a Renovate
+      #     SWIFT_VERSION bump ships -- version.sh says RELEASE=yes exactly when this upstream has no
+      #     tag, so there is nothing extra to detect and no second workflow to keep in step.
+      # Anything else builds and gates without publishing.
+      - name: Resolve the version + decide whether this run publishes
         id: ver
         run: |
           if [ "${GITHUB_REF_TYPE}" = tag ]; then
-            VER="${GITHUB_REF_NAME}"
-            printf '%s\n' "$VER" > VERSION     # a build product; every later step reads this one
+            VER="${GITHUB_REF_NAME}"; PUBLISH=true
           else
-            VER="$(sh "$MSC_SCRIPTS/resolve-version.sh")"
+            mode=auto
+            if [ "${GITHUB_EVENT_NAME}" = workflow_dispatch ] && [ "${{ inputs.local_release }}" = "true" ]; then
+              mode=local
+            fi
+            out="$(sh "$MSC_SCRIPTS/version.sh" "$mode")"
+            VER="$(printf '%s\n' "$out" | sed -n 's/^FULL=//p')"
+            REL="$(printf '%s\n' "$out" | sed -n 's/^RELEASE=//p')"
+            if [ "$mode" = local ]; then
+              PUBLISH=true
+            elif [ "$REL" = yes ] && [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+              PUBLISH=true            # new upstream, first release
+            else
+              PUBLISH=false
+            fi
           fi
+          printf '%s\n' "$VER" > VERSION     # a build product; every later step reads this one
           echo "version=$VER" >> "$GITHUB_OUTPUT"
-          echo "version=$VER"
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "version=$VER publish=$PUBLISH"
 
       - name: Build the relocatable LLVM build-support tree
         run: ./build-llvm.sh
@@ -91,7 +119,7 @@ jobs:
       # family's schemes? Gated on a tag, which is when this repo publishes -- a plain push builds
       # without producing the appcast this asks about.
       - name: Artifact conformance
-        if: github.ref_type == 'tag'
+        if: steps.ver.outputs.publish == 'true'
         run: |
           sh "$MSC_SCRIPTS/artifact-facts.sh" dist "${{ steps.ver.outputs.version }}" \
             | sh "$MSC_SCRIPTS/check-artifact-conformance.sh"
@@ -108,7 +136,7 @@ jobs:
 
   publish:
     needs: [build]
-    if: github.ref_type == 'tag'
+    if: needs.build.outputs.publish == 'true'
     permissions:
       contents: write
     uses: ModernMavericks/shared-cmake/.github/workflows/publish-release.yml@v1
