@@ -9,6 +9,7 @@ set -eu
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 . "$HERE/pins.env"
+. "$HERE/msc.sh"   # -> $MSC (shared-cmake scripts dir)
 # Same scratch override as build-llvm.sh. This gate does a full Swift stdlib build, so it
 # especially wants local disk when the repo is on slow storage. CI leaves this unset.
 ROOT="${SWIFT_TOOLCHAIN_WORK:-$HERE/work}"; mkdir -p "$ROOT"; cd "$ROOT"
@@ -28,7 +29,7 @@ fi
 TC="$ROOT/toolchain/usr"
 
 echo "==> 2. pinned swift source (unpatched: we are testing the ENVIRONMENT, not the patches)"
-[ -d swift ] || git clone --depth 1 --branch "$SWIFT_TAG" https://github.com/swiftlang/swift.git swift
+[ -d swift ] || sh "$MSC/clone_pinned.sh" https://github.com/swiftlang/swift.git "$SWIFT_TAG" "$SWIFT_SHA" swift
 test "$(git -C swift rev-parse HEAD)" = "$SWIFT_SHA" || {
   echo "FAIL: swift SHA mismatch (want $SWIFT_SHA)"; exit 1; }
 

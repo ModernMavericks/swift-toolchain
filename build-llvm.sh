@@ -7,24 +7,21 @@ set -eu
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 . "$HERE/pins.env"
+. "$HERE/msc.sh"   # -> $MSC (shared-cmake scripts dir)
 # Scratch defaults to ./work (what CI uses). Override when the repo lives on slow or
 # quirky storage -- e.g. this project's checkout is NFS-backed, where an LLVM build is
 # slow and `rm -rf` races silly-rename. CI leaves this unset.
 ROOT="${SWIFT_TOOLCHAIN_WORK:-$HERE/work}"; mkdir -p "$ROOT"; cd "$ROOT"
 OUT="$HERE/out/llvm"
 
-echo "==> 1. pinned llvm-project source (fetched BY SHA, not by branch tip)"
-# Fetch the pinned commit directly. Cloning --branch would take wherever the branch points
-# TODAY: the moment swiftlang advances swift/release/6.3, a shallow clone stops containing
-# $LLVM_SHA and this repo can never build again. Guard on llvm/ existing, not on the bare
-# directory -- an interrupted checkout leaves a .git whose HEAD passes the SHA test while
-# the worktree is empty, and cmake then dies confusingly on a missing source dir.
+echo "==> 1. pinned llvm-project source (fetched BY SHA via shared clone_pinned.sh)"
+# clone_pinned fetches the pinned commit DIRECTLY (not a branch tip): the moment swiftlang advances
+# swift/release/6.3, a --branch clone stops containing $LLVM_SHA and this repo can never build again.
+# Guard on llvm/ existing, not on .git -- an interrupted checkout leaves a .git whose HEAD passes the
+# SHA test while the worktree is empty (cmake then dies confusingly), so re-fetch from scratch then.
 if [ ! -d llvm-project/llvm ]; then
-  rm -rf llvm-project; mkdir -p llvm-project
-  git -C llvm-project init -q
-  git -C llvm-project remote add origin https://github.com/swiftlang/llvm-project.git
-  git -C llvm-project fetch --depth 1 origin "$LLVM_SHA"
-  git -C llvm-project checkout -q FETCH_HEAD
+  rm -rf llvm-project
+  sh "$MSC/clone_pinned.sh" https://github.com/swiftlang/llvm-project.git "$LLVM_BRANCH" "$LLVM_SHA" llvm-project
 fi
 test "$(git -C llvm-project rev-parse HEAD)" = "$LLVM_SHA" || {
   echo "FAIL: llvm-project SHA mismatch (want $LLVM_SHA)"; exit 1; }

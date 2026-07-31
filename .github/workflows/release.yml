@@ -35,6 +35,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # build-llvm.sh / verify-relocatable.sh fetch pinned sources via shared-cmake's clone_pinned.sh,
+      # and Artifact conformance uses $MSC_SCRIPTS -- both need shared-cmake installed here (the action
+      # exports $MSC_SCRIPTS for every later step).
+      - name: Install mavericks-shared-cmake
+        uses: ModernMavericks/shared-cmake/.github/actions/install@v1
+
       - name: Version check (tag must equal VERSION)
         id: ver
         run: |
