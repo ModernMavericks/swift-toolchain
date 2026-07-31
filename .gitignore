@@ -7,3 +7,5 @@ dist/
 .DS_Store
 docs/
 .superpowers/
+/VERSION
+/UPSTREAM_VERSION

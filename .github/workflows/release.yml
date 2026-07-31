@@ -34,6 +34,8 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # the version is derived from the shipped *-mavericks.* tags
 
       # build-llvm.sh / verify-relocatable.sh fetch pinned sources via shared-cmake's clone_pinned.sh,
       # and Artifact conformance uses $MSC_SCRIPTS -- both need shared-cmake installed here (the action
@@ -41,14 +43,24 @@ jobs:
       - name: Install mavericks-shared-cmake
         uses: ModernMavericks/shared-cmake/.github/actions/install@v1
 
-      - name: Version check (tag must equal VERSION)
+      # The version is DERIVED, so there is nothing for a tag to disagree with. What this replaces --
+      # "tag must equal the committed VERSION" -- made every release a two-step ritual: edit VERSION,
+      # commit to main, then tag. Bots cannot do the commit (branch protection requires a status check
+      # a fresh commit has not got), which is why this repo never joined the automated release path.
+      - name: Derive the upstream version from the pin
+        run: sh scripts/derive-upstream-version.sh
+
+      - name: Resolve the version
         id: ver
         run: |
-          VER=$(cat VERSION)
-          echo "version=$VER" >> "$GITHUB_OUTPUT"
-          if [ "${GITHUB_REF_TYPE}" = tag ] && [ "${GITHUB_REF_NAME}" != "$VER" ]; then
-            echo "::error::tag ${GITHUB_REF_NAME} != $VER (VERSION file)"; exit 1
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then
+            VER="${GITHUB_REF_NAME}"
+            printf '%s\n' "$VER" > VERSION     # a build product; every later step reads this one
+          else
+            VER="$(sh "$MSC_SCRIPTS/resolve-version.sh")"
           fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "version=$VER"
 
       - name: Build the relocatable LLVM build-support tree
         run: ./build-llvm.sh
@@ -67,7 +79,7 @@ jobs:
       - name: Stage the release notes
         run: |
           set -eu
-          VER="$(cat VERSION)"
+          VER="${{ steps.ver.outputs.version }}"   # the version this run resolved, not a re-read
           mkdir -p dist
           if [ -s "release-notes/$VER.md" ]; then
             cp "release-notes/$VER.md" dist/RELEASE_NOTES.md
