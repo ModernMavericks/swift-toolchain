@@ -5,7 +5,7 @@ Everything baked into what this repo publishes, and how a change to it reaches a
 
 This repo is unusual in the family twice over: it publishes a **build environment** for
 `ModernMavericks/swift-runtime` rather than an end-user `.pkg`, and it consumes **none** of
-shared-cmake's CMake facilities — no updater, no `.pkg`, no 10.9 install floor, so nothing to stage or
+shipyard's CMake facilities — no updater, no `.pkg`, no 10.9 install floor, so nothing to stage or
 sign. It still runs the family conventions gate, because conventions that only apply to the typical
 repo are not conventions.
 

@@ -43,11 +43,11 @@ jobs:
         with:
           fetch-depth: 0   # the version is derived from the shipped *-mavericks.* tags
 
-      # build-llvm.sh / verify-relocatable.sh fetch pinned sources via shared-cmake's clone_pinned.sh,
-      # and Artifact conformance uses $MSC_SCRIPTS -- both need shared-cmake installed here (the action
-      # exports $MSC_SCRIPTS for every later step).
-      - name: Install mavericks-shared-cmake
-        uses: ModernMavericks/shared-cmake/.github/actions/install@v1
+      # build-llvm.sh / verify-relocatable.sh fetch pinned sources via shipyard's clone_pinned.sh,
+      # and Artifact conformance uses $SHIPYARD_SCRIPTS -- both need shipyard installed here (the action
+      # exports $SHIPYARD_SCRIPTS for every later step).
+      - name: Install mavericks-shipyard
+        uses: ModernMavericks/shipyard/.github/actions/install@v1
 
       # The version is DERIVED, so there is nothing for a tag to disagree with. What this replaces --
       # "tag must equal the committed VERSION" -- made every release a two-step ritual: edit VERSION,
@@ -121,8 +121,8 @@ jobs:
       - name: Artifact conformance
         if: steps.ver.outputs.publish == 'true'
         run: |
-          sh "$MSC_SCRIPTS/artifact-facts.sh" dist "${{ steps.ver.outputs.version }}" \
-            | sh "$MSC_SCRIPTS/check-artifact-conformance.sh"
+          sh "$SHIPYARD_SCRIPTS/artifact-facts.sh" dist "${{ steps.ver.outputs.version }}" \
+            | sh "$SHIPYARD_SCRIPTS/check-artifact-conformance.sh"
 
       # No SHA256SUMS in the artifact: publish-release.yml regenerates it over everything it attaches.
       - name: Upload artifacts
@@ -139,7 +139,7 @@ jobs:
     if: needs.build.outputs.publish == 'true'
     permissions:
       contents: write
-    uses: ModernMavericks/shared-cmake/.github/workflows/publish-release.yml@v1
+    uses: ModernMavericks/shipyard/.github/workflows/publish-release.yml@v1
     with:
       version: ${{ needs.build.outputs.version }}
       artifact: swift-toolchain

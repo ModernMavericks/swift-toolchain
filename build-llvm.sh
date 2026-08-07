@@ -7,7 +7,7 @@ set -eu
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 . "$HERE/pins.env"
-. "$HERE/msc.sh"   # -> $MSC (shared-cmake scripts dir)
+. "$HERE/msc.sh"   # -> $SHIPYARD (shipyard scripts dir)
 # Scratch defaults to ./work (what CI uses). Override when the repo lives on slow or
 # quirky storage -- e.g. this project's checkout is NFS-backed, where an LLVM build is
 # slow and `rm -rf` races silly-rename. CI leaves this unset.
@@ -21,7 +21,7 @@ echo "==> 1. pinned llvm-project source (fetched BY SHA via shared clone_pinned.
 # SHA test while the worktree is empty (cmake then dies confusingly), so re-fetch from scratch then.
 if [ ! -d llvm-project/llvm ]; then
   rm -rf llvm-project
-  sh "$MSC/clone_pinned.sh" https://github.com/swiftlang/llvm-project.git "$LLVM_BRANCH" "$LLVM_SHA" llvm-project
+  sh "$SHIPYARD/clone_pinned.sh" https://github.com/swiftlang/llvm-project.git "$LLVM_BRANCH" "$LLVM_SHA" llvm-project
 fi
 test "$(git -C llvm-project rev-parse HEAD)" = "$LLVM_SHA" || {
   echo "FAIL: llvm-project SHA mismatch (want $LLVM_SHA)"; exit 1; }
