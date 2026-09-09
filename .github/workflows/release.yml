@@ -86,7 +86,7 @@ jobs:
             if [ "${GITHUB_EVENT_NAME}" = workflow_dispatch ] && [ "${{ inputs.local_release }}" = "true" ]; then
               mode=local
             fi
-            out="$(sh "$MSC_SCRIPTS/version.sh" "$mode")"
+            out="$(sh "$SHIPYARD_SCRIPTS/version.sh" "$mode")"
             VER="$(printf '%s\n' "$out" | sed -n 's/^FULL=//p')"
             REL="$(printf '%s\n' "$out" | sed -n 's/^RELEASE=//p')"
             if [ "$mode" = local ]; then
