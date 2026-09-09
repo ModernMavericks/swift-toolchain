@@ -9,3 +9,10 @@ docs/
 .superpowers/
 /VERSION
 /UPSTREAM_VERSION
+
+# CMake build trees this repo writes INTO the checkout: build-llvm.sh configures `-B llvm-build`,
+# and the compat gate `-B gate-build`. An LLVM build tree is enormous and its CMakeCache bakes in
+# absolute paths, so neither survives being committed usefully -- and `work/ out/ dist/` above never
+# covered either of them.
+gate-build/
+llvm-build/
