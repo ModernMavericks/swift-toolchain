@@ -1,0 +1,15 @@
+# Release notes
+
+The generator (`release-notes.sh`, from mavericks-shipyard) writes the notes file for every
+release: the title, a "What changed" section, a "Build ingredients" section when a pin moved,
+and the footer. That file becomes the GitHub Release body. This repo ships no Sparkle feed (it
+publishes a build environment, not an end-user `.pkg` -- see `INGREDIENTS.md`), so the Release
+body is the file's only consumer.
+
+A file here, named `<full-version>.md` (e.g. `6.3.3-mavericks.5.md`), is OPTIONAL hand-written
+prose for that one release. When present, it is inserted verbatim right after the generated
+title. It must NOT start with its own `## ` heading -- the generator already emits the title;
+a second one would double it.
+
+Most releases have no file here at all, and that's fine: the generator's own sections are the
+whole note.

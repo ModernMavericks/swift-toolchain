@@ -115,21 +115,18 @@ jobs:
         run: ./verify-relocatable.sh
 
       # The body travels IN the artifact: publish-release.yml does not check out the repo, so one rule
-      # works whether the notes are committed (here) or generated (tailscale).
-      - name: Stage the release notes
+      # works whether the notes are committed (here) or generated (tailscale). This repo ships no
+      # Sparkle feed (no updater, no .pkg floor -- see INGREDIENTS.md), so the Release body is this
+      # file's only consumer; the generator itself finds scripts/upstream-release-notes-url.sh (the
+      # same hook the old inline upstream-notes.sh call used) and the repackage-on-ingredient-bump.yml
+      # caller for the ingredient section. Tags ARE the version here, so --tag and --version match.
+      - name: Generate release notes
+        if: steps.ver.outputs.publish == 'true'
         run: |
           set -eu
-          VER="${{ steps.ver.outputs.version }}"   # the version this run resolved, not a re-read
-          mkdir -p dist
-          if [ -s "release-notes/$VER.md" ]; then
-            cp "release-notes/$VER.md" dist/RELEASE_NOTES.md
-          else
-            printf '## %s\n\nAutomated release of the pinned Swift build environment.\n' "$VER" > dist/RELEASE_NOTES.md
-          fi
-          # A new upstream links Swift's own notes (scripts/upstream-release-notes-url.sh says where);
-          # a repackage gets nothing. Notes are prose: never fail the release over it.
-          UPSEC="$(sh "$SHIPYARD_SCRIPTS/upstream-notes.sh" "$VER" || true)"
-          [ -z "$UPSEC" ] || printf '\n%s\n' "$UPSEC" >> dist/RELEASE_NOTES.md
+          sh "$SHIPYARD_SCRIPTS/release-notes.sh" \
+            --tag "${{ steps.ver.outputs.version }}" --version "${{ steps.ver.outputs.version }}" \
+            --product 'Swift Toolchain' --out dist/RELEASE_NOTES.md
 
       # Conformance: do the artifacts about to be published agree with each other and with the
       # family's schemes? Gated on a tag, which is when this repo publishes -- a plain push builds
